@@ -7,4 +7,4 @@ def check_number():
     else:
         print("Zero")
 
-check_number()
+check_number() 
