@@ -9,6 +9,6 @@ def add_numbers(a, b):
 # Exmp
 try:
     result = add_numbers(6, 5)
-    print(result)  # Output: 8
+    print(result)  
 except NotANumberError as e:
     print(e)
