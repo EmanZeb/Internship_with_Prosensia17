@@ -1,11 +1,12 @@
 inventory = []
-def add_product(name, price, quantity):#Function to check product already exits 
+def add_product(name, price, quantity):
     for product in inventory:
         if product['name'] == name:
             print(f"Product '{name}' already exists in the inventory.")
             return
     inventory.append({'name': name, 'price': price, 'quantity': quantity})
     print(f"Product '{name}' added successfully.")
+
 def update_quantity(name, quantity):
     for product in inventory:
         if product['name'] == name:
@@ -24,8 +25,8 @@ def display_inventory():
     print("-" * 40)
     for product in inventory:
         print(f"{product['name']:<20} ${product['price']:<10.2f} {product['quantity']:<10}")
-
 def main():
+
     while True:
         print("\nInventory Management System")
         print("1. Add a new product")
