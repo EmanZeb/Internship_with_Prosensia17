@@ -1,5 +1,7 @@
 import datetime
 import random
+import tkinter as tk
+from tkinter import messagebox, simpledialog, Text
 
 # Initialize data storage
 entries = []
@@ -35,8 +37,7 @@ def add_entry(description):
     # Check for badges
     award_badges()
     
-    print(f"Entry added. Today's mood: {mood}")
-    print(f"Suggestion: {', '.join(suggestions.get(mood, ['No suggestions available']))}")
+    messagebox.showinfo("Entry Added", f"Entry added. Today's mood: {mood}\nSuggestion: {', '.join(suggestions.get(mood, ['No suggestions available']))}")
 
 # Add a goal
 def add_goal(goal):
@@ -45,21 +46,21 @@ def add_goal(goal):
         'date': datetime.datetime.now().strftime("%Y-%m-%d"),
         'goal': goal
     })
-    print("Goal added.")
+    messagebox.showinfo("Goal Added", "Goal added.")
 
 # Analyze entries
 def analyze_entries():
     """Analyze sentiment and provide suggestions."""
     if not entries:
-        print("No entries to analyze.")
+        messagebox.showinfo("Analyze Entries", "No entries to analyze.")
         return
     
+    analysis_text = ""
     for entry in entries:
         mood = entry['mood']
-        print(f"Date: {entry['date']}")
-        print(f"Sentiment: {mood}")
-        print(f"Suggestion: {', '.join(suggestions.get(mood, ['No suggestions available']))}")
-        print("-" * 40)
+        analysis_text += f"Date: {entry['date']}\nSentiment: {mood}\nSuggestion: {', '.join(suggestions.get(mood, ['No suggestions available']))}\n{'-' * 40}\n"
+    
+    show_text_window("Analyze Entries", analysis_text)
 
 # Simple sentiment analysis function
 def analyze_sentiment(text):
@@ -80,30 +81,31 @@ def analyze_sentiment(text):
 def view_goals():
     """View personal growth goals and progress."""
     if not goals:
-        print("No goals set.")
+        messagebox.showinfo("View Goals", "No goals set.")
         return
     
+    goals_text = ""
     for goal in goals:
-        print(f"Date: {goal['date']}")
-        print(f"Goal: {goal['goal']}")
-        print("-" * 40)
+        goals_text += f"Date: {goal['date']}\nGoal: {goal['goal']}\n{'-' * 40}\n"
+    
+    show_text_window("View Goals", goals_text)
 
 # Award badges based on mood history and goals
 def award_badges():
     """Award achievement badges based on user activity."""
     if len(entries) >= 7 and "Consistent Journaler" not in badges:
         badges.add("Consistent Journaler")
-        print("You've earned the 'Consistent Journaler' badge for journaling for 7 days!")
+        messagebox.showinfo("Badge Earned", "You've earned the 'Consistent Journaler' badge for journaling for 7 days!")
     
     positive_moods = [entry['mood'] for entry in entries if entry['mood'] == 'Positive']
     if len(positive_moods) >= 5 and "Positive Streak" not in badges:
         badges.add("Positive Streak")
-        print("You've earned the 'Positive Streak' badge for having 5 positive mood entries!")
+        messagebox.showinfo("Badge Earned", "You've earned the 'Positive Streak' badge for having 5 positive mood entries!")
 
 # Display a random mood-boosting tip
 def mood_boosting_tip():
     """Display a random mood-boosting tip."""
-    print("Mood-Boosting Tip: " + random.choice(mood_boosting_tips))
+    messagebox.showinfo("Mood-Boosting Tip", random.choice(mood_boosting_tips))
 
 # Daily reminders to journal
 def daily_reminder():
@@ -112,58 +114,58 @@ def daily_reminder():
     today_date = datetime.datetime.now().strftime("%Y-%m-%d")
     
     if last_entry_date and last_entry_date.strftime("%Y-%m-%d") != today_date:
-        print("Reminder: You haven't added a diary entry today. Don't forget to journal!")
+        messagebox.showinfo("Daily Reminder", "Reminder: You haven't added a diary entry today. Don't forget to journal!")
 
 # Mood graphs (text-based visualization)
 def mood_graph():
     """Display a simple text-based graph of mood trends."""
     if not entries:
-        print("No mood data to display.")
+        messagebox.showinfo("Mood Graph", "No mood data to display.")
         return
     
     mood_counts = {'Positive': 0, 'Neutral': 0, 'Negative': 0}
     for entry in entries:
         mood_counts[entry['mood']] += 1
     
-    print("Mood Graph:")
+    graph_text = "Mood Graph:\n"
     for mood, count in mood_counts.items():
-        print(f"{mood}: {'*' * count}")
+        graph_text += f"{mood}: {'*' * count}\n"
+    
+    show_text_window("Mood Graph", graph_text)
+
+# Show text in a new window
+def show_text_window(title, text):
+    """Show text in a new window."""
+    text_window = tk.Toplevel(root)
+    text_window.title(title)
+    
+    text_area = Text(text_window, wrap=tk.WORD)
+    text_area.insert(tk.END, text)
+    text_area.pack(expand=True, fill='both')
 
 # Main function to interact with the diary
 def main():
     """Main function to interact with the personal diary."""
-    while True:
-        print("1. Add Entry")
-        print("2. Analyze Entries")
-        print("3. Add Goal")
-        print("4. View Goals")
-        print("5. View Achievement Badges")
-        print("6. Get Mood-Boosting Tip")
-        print("7. View Mood Graph")
-        print("8. Exit")
-        daily_reminder()
-        choice = input("Choose an option: ")
-        
-        if choice == '1':
-            description = input("Enter diary entry: ")
-            add_entry(description)
-        elif choice == '2':
-            analyze_entries()
-        elif choice == '3':
-            goal = input("Enter personal growth goal: ")
-            add_goal(goal)
-        elif choice == '4':
-            view_goals()
-        elif choice == '5':
-            print("Achievement Badges: ", ", ".join(badges) if badges else "No badges earned yet.")
-        elif choice == '6':
-            mood_boosting_tip()
-        elif choice == '7':
-            mood_graph()
-        elif choice == '8':
-            break
-        else:
-            print("Invalid choice. Please try again.")
+    global root
+    root = tk.Tk()
+    root.title("Personal Diary")
 
-if _name_ == "_main_":
+    frame = tk.Frame(root)
+    frame.pack(padx=20, pady=20)
+
+    tk.Button(frame, text="Add Entry", width=25, command=lambda: add_entry(simpledialog.askstring("Add Entry", "Enter diary entry:"))).pack(pady=5)
+    tk.Button(frame, text="Analyze Entries", width=25, command=analyze_entries).pack(pady=5)
+    tk.Button(frame, text="Add Goal", width=25, command=lambda: add_goal(simpledialog.askstring("Add Goal", "Enter personal growth goal:"))).pack(pady=5)
+    tk.Button(frame, text="View Goals", width=25, command=view_goals).pack(pady=5)
+    tk.Button(frame, text="View Achievement Badges", width=25, command=lambda: messagebox.showinfo("Achievement Badges", ", ".join(badges) if badges else "No badges earned yet.")).pack(pady=5)
+    tk.Button(frame, text="Get Mood-Boosting Tip", width=25, command=mood_boosting_tip).pack(pady=5)
+    tk.Button(frame, text="View Mood Graph", width=25, command=mood_graph).pack(pady=5)
+    tk.Button(frame, text="Exit", width=25, command=root.quit).pack(pady=5)
+
+    daily_reminder()
+
+    root.mainloop()
+
+if __name__ == "__main__":
     main()
+ 
