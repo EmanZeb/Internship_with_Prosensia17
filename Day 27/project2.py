@@ -1,13 +1,23 @@
 import random
 import time
+import tkinter as tk
+from tkinter import messagebox
 
-class Quiz:
-    def _init_(self):
+class QuizApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Quiz Application")
+        self.root.geometry("600x400")
         self.questions = []
         self.score = 0
         self.hints_used = 0
         self.incorrect_answers = []
+        self.current_question_index = 0
+        self.current_category = None
+        self.start_time = None
+        self.difficulty = None
         self.load_sample_questions()
+        self.create_main_menu()
 
     def load_sample_questions(self):
         self.questions = {
@@ -25,117 +35,158 @@ class Quiz:
             ]
         }
 
+    def create_main_menu(self):
+        self.clear_window()
+
+        label = tk.Label(self.root, text="Welcome to the Quiz Application", font=("Arial", 20))
+        label.pack(pady=20)
+
+        start_button = tk.Button(self.root, text="Start Quiz", command=self.start_quiz, font=("Arial", 14))
+        start_button.pack(pady=10)
+
+        exit_button = tk.Button(self.root, text="Exit", command=self.root.quit, font=("Arial", 14))
+        exit_button.pack(pady=10)
+
+    def start_quiz(self):
+        self.clear_window()
+        self.select_category()
+
+    def select_category(self):
+        label = tk.Label(self.root, text="Select a Category", font=("Arial", 16))
+        label.pack(pady=20)
+
+        categories = list(self.questions.keys())
+        for i, category in enumerate(categories):
+            button = tk.Button(self.root, text=category, font=("Arial", 14),
+                               command=lambda c=category: self.select_difficulty(c))
+            button.pack(pady=5)
+
+    def select_difficulty(self, category):
+        self.current_category = category
+        self.clear_window()
+
+        label = tk.Label(self.root, text="Select Difficulty Level", font=("Arial", 16))
+        label.pack(pady=20)
+
+        difficulties = ['Easy', 'Medium', 'Hard']
+        for i, level in enumerate(difficulties):
+            button = tk.Button(self.root, text=level, font=("Arial", 14),
+                               command=lambda d=level: self.begin_quiz(d))
+            button.pack(pady=5)
+
+    def begin_quiz(self, difficulty):
+        self.difficulty = difficulty
+        self.score = 0
+        self.hints_used = 0
+        self.incorrect_answers = []
+        self.current_question_index = 0
+        self.shuffle_questions(self.current_category)
+        self.show_question()
+
     def shuffle_questions(self, category):
         random.shuffle(self.questions[category])
 
-    def display_question(self, question, q_num):
-        print(f"Q{q_num + 1}: {question['question']}")
-        for i, option in enumerate(question['options']):
-            print(f"{i + 1}. {option}")
-        start_time = time.time()
-        user_answer = input("Enter the number of your answer (or type 'hint' for a hint): ")
-        elapsed_time = time.time() - start_time
-        return user_answer, elapsed_time
+    def show_question(self):
+        if self.current_question_index < len(self.questions[self.current_category]):
+            self.clear_window()
+            question_data = self.questions[self.current_category][self.current_question_index]
 
-    def check_answer(self, user_answer, correct_answer):
-        if user_answer.isdigit():
-            return int(user_answer) - 1 == correct_answer
-        return False
+            label = tk.Label(self.root, text=f"Q{self.current_question_index + 1}: {question_data['question']}", font=("Arial", 16))
+            label.pack(pady=20)
+
+            for i, option in enumerate(question_data['options']):
+                button = tk.Button(self.root, text=option, font=("Arial", 14),
+                                   command=lambda ans=i: self.check_answer(ans, question_data['answer']))
+                button.pack(pady=5)
+
+            hint_button = tk.Button(self.root, text="Hint", font=("Arial", 14),
+                                    command=lambda: self.provide_hint(question_data))
+            hint_button.pack(pady=5)
+
+            self.start_time = time.time()
+        else:
+            self.show_result()
 
     def provide_hint(self, question):
         self.hints_used += 1
-        print(f"Hint: {question['hint']}\n")
+        messagebox.showinfo("Hint", question['hint'])
 
-    def start_quiz(self):
-        print("\nWelcome to the Quiz!")
-        category = self.select_category()
-        difficulty = self.select_difficulty()
-        self.shuffle_questions(category)
-        total_questions = len(self.questions[category])
+    def check_answer(self, user_answer, correct_answer):
+        elapsed_time = time.time() - self.start_time
+        if elapsed_time > 10:
+            messagebox.showinfo("Time's up!", "Time's up! Moving to the next question.")
+            self.incorrect_answers.append(self.questions[self.current_category][self.current_question_index])
+        elif user_answer == correct_answer:
+            messagebox.showinfo("Correct", "Correct Answer!")
+            self.score += 1
+        else:
+            messagebox.showinfo("Wrong", f"Wrong Answer! The correct answer was option {correct_answer + 1}.")
+            self.incorrect_answers.append(self.questions[self.current_category][self.current_question_index])
 
-        for i, question in enumerate(self.questions[category]):
-            print(f"Difficulty: {difficulty}")
-            user_answer, elapsed_time = self.display_question(question, i)
+        self.current_question_index += 1
+        self.show_question()
 
-            if user_answer.lower() == 'hint':
-                self.provide_hint(question)
-                user_answer, _ = self.display_question(question, i)
+    def show_result(self):
+        self.clear_window()
 
-            if elapsed_time > 10:
-                print("Time's up! Moving to the next question.\n")
-                self.incorrect_answers.append(question)
-            elif self.check_answer(user_answer, question['answer']):
-                print("Correct!\n")
-                self.score += 1
-            else:
-                print(f"Wrong! The correct answer was option {question['answer'] + 1}.\n")
-                self.incorrect_answers.append(question)
+        label = tk.Label(self.root, text="Quiz Completed!", font=("Arial", 20))
+        label.pack(pady=20)
 
-            self.show_progress(i + 1, total_questions)
-
-        self.show_result(total_questions)
-        self.review_incorrect_answers()
-
-    def select_category(self):
-        print("Select a category:")
-        categories = list(self.questions.keys())
-        for i, category in enumerate(categories):
-            print(f"{i + 1}. {category}")
-        choice = int(input("Enter the number of your category: ")) - 1
-        return categories[choice]
-
-    def select_difficulty(self):
-        print("Select difficulty level:")
-        difficulties = ['Easy', 'Medium', 'Hard']
-        for i, level in enumerate(difficulties):
-            print(f"{i + 1}. {level}")
-        choice = int(input("Enter the number of your difficulty level: ")) - 1
-        return difficulties[choice]
-
-    def show_progress(self, current_question, total_questions):
-        print(f"Progress: {current_question}/{total_questions} questions answered.\n")
-
-    def show_result(self, total_questions):
-        print("Quiz Completed!")
-        print(f"Your final score is: {self.score}/{total_questions}")
+        total_questions = len(self.questions[self.current_category])
         percentage = (self.score / total_questions) * 100
-        print(f"That's {percentage:.2f}% correct.")
+
+        result_label = tk.Label(self.root, text=f"Your final score is: {self.score}/{total_questions}\nThat's {percentage:.2f}% correct.", font=("Arial", 16))
+        result_label.pack(pady=10)
+
         self.award_badge(percentage)
+
+        review_button = tk.Button(self.root, text="Review Incorrect Answers", command=self.review_incorrect_answers, font=("Arial", 14))
+        review_button.pack(pady=5)
+
+        exit_button = tk.Button(self.root, text="Exit", command=self.create_main_menu, font=("Arial", 14))
+        exit_button.pack(pady=5)
 
     def award_badge(self, percentage):
         if percentage == 100:
-            print("Excellent! You earned the Perfect Score Badge!")
+            badge = "🌟 Excellent! You earned the Perfect Score Badge! 🌟"
         elif percentage >= 80:
-            print("Great job! You earned the High Achiever Badge!")
+            badge = "🎉 Great job! You earned the High Achiever Badge! 🎉"
         elif percentage >= 50:
-            print("Good effort! You earned the Pass Badge!")
+            badge = "👍 Good effort! You earned the Pass Badge! 👍"
         else:
-            print("Better luck next time. Keep practicing!")
+            badge = "Keep practicing! You'll improve with more practice."
+
+        messagebox.showinfo("Badge Awarded", badge)
 
     def review_incorrect_answers(self):
         if self.incorrect_answers:
-            print("\nReview your incorrect answers:")
+            review_window = tk.Toplevel(self.root)
+            review_window.title("Review Incorrect Answers")
+            review_window.geometry("600x400")
+
+            label = tk.Label(review_window, text="Review your incorrect answers:", font=("Arial", 16))
+            label.pack(pady=20)
+
             for question in self.incorrect_answers:
-                print(f"Q: {question['question']}")
-                print(f"Correct Answer: {question['options'][question['answer']]}")
-                print()
+                question_label = tk.Label(review_window, text=f"Q: {question['question']}", font=("Arial", 14))
+                question_label.pack(pady=5)
+
+                answer_label = tk.Label(review_window, text=f"Correct Answer: {question['options'][question['answer']]}", font=("Arial", 14))
+                answer_label.pack(pady=5)
+
+            close_button = tk.Button(review_window, text="Close", command=review_window.destroy, font=("Arial", 14))
+            close_button.pack(pady=10)
+        else:
+            messagebox.showinfo("No Incorrect Answers", "You have no incorrect answers to review.")
+
+    def clear_window(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
 def main():
-    quiz = Quiz()
+    root = tk.Tk()
+    app = QuizApp(root)
+    root.mainloop()
 
-    while True:
-        print("Welcome To The Quiz Application")
-        print("1. Start Quiz")
-        print("2. Exit")
-        choice = input("Enter your choice: ")
-
-        if choice == '1':
-            quiz.start_quiz()
-        elif choice == '2':
-            print("Thank you for playing! Goodbye!")
-            break
-        else:
-            print("Invalid choice. Please try again.")
-
-if _name_ == "_main_":
+if __name__ == "__main__":
     main()
